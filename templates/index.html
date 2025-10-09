@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Analysis</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
+        input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; }
+        #result { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; }
+        #preview { max-width: 100%; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Image Analysis with Vertex AI</h1>
+    <form id="analysisForm">
+        <input type="file" id="image" accept="image/*" required>
+        <img id="preview" style="display:none;">
+        <textarea id="prompt" placeholder="Enter your prompt (e.g., 'Describe this image in detail')" rows="3" required></textarea>
+        <button type="submit">Analyze</button>
+    </form>
+    <div id="result" style="display:none;"></div>
+
+    <script>
+        document.getElementById('image').addEventListener('change', function(e) {
+            const preview = document.getElementById('preview');
+            preview.src = URL.createObjectURL(e.target.files[0]);
+            preview.style.display = 'block';
+        });
+
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('image', document.getElementById('image').files[0]);
+            formData.append('prompt', document.getElementById('prompt').value);
+
+            document.getElementById('result').innerHTML = 'Analyzing...';
+            document.getElementById('result').style.display = 'block';
+
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            document.getElementById('result').innerHTML = data.analysis || data.error;
+        });
+    </script>
+</body>
+</html>
