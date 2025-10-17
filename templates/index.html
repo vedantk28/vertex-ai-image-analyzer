@@ -1,47 +1,547 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Image Analysis</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriVision AI - Smart Farm Analysis</title>
     <style>
-        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
-        input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; }
-        #result { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; }
-        #preview { max-width: 100%; margin: 10px 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #2d7a3e;
+            --secondary: #f59e0b;
+            --dark: #1a1a1a;
+            --light: #f8fafc;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .quick-prompts {
+            margin-bottom: 40px;
+        }
+        
+        .quick-prompts h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .prompt-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .prompt-card {
+            background: linear-gradient(135deg, var(--primary), #1e5a2e);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+        
+        .prompt-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(45, 122, 62, 0.4);
+        }
+        
+        .prompt-card.active {
+            border-color: var(--secondary);
+            background: linear-gradient(135deg, var(--secondary), #d97706);
+        }
+        
+        .prompt-card h3 {
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .prompt-card p {
+            font-size: 0.85em;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .upload-section {
+            background: var(--light);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area {
+            border: 3px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #f0fdf4;
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--secondary);
+            background: #fffbeb;
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .custom-prompt {
+            margin-top: 20px;
+        }
+        
+        .custom-prompt textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+        
+        .custom-prompt textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn:hover:not(:disabled) {
+            background: #1e5a2e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(45, 122, 62, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .results-header {
+            background: linear-gradient(135deg, var(--primary), #1e5a2e);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .results-header h2 {
+            font-size: 1.5em;
+        }
+        
+        .results-meta {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .results-body {
+            background: white;
+            border: 2px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            padding: 30px;
+        }
+        
+        .analysis-content {
+            line-height: 1.8;
+            color: #334155;
+        }
+        
+        .analysis-content h2 {
+            color: var(--primary);
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .analysis-content h3 {
+            color: var(--secondary);
+            margin: 20px 0 10px;
+        }
+        
+        .analysis-content ul {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .analysis-content li {
+            margin-bottom: 8px;
+        }
+        
+        .analysis-content strong {
+            color: var(--dark);
+        }
+        
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        
+        .btn-secondary:hover {
+            background: #d97706;
+        }
+        
+        .image-preview {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .error {
+            background: #fee;
+            border: 2px solid var(--danger);
+            color: var(--danger);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            header h1 { font-size: 2em; }
+            .main-content { padding: 20px; }
+            .prompt-cards { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <h1>Image Analysis with Vertex AI</h1>
-    <form id="analysisForm">
-        <input type="file" id="image" accept="image/*" required>
-        <img id="preview" style="display:none;">
-        <textarea id="prompt" placeholder="Enter your prompt (e.g., 'Describe this image in detail')" rows="3" required></textarea>
-        <button type="submit">Analyze</button>
-    </form>
-    <div id="result" style="display:none;"></div>
-
+    <div class="container">
+        <header>
+            <h1>🌾 AgriVision AI</h1>
+            <p>Advanced AI-Powered Agriculture & Poultry Analysis</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="quick-prompts">
+                <h2>Quick Analysis Templates</h2>
+                <div class="prompt-cards">
+                    <div class="prompt-card" data-type="plant_disease">
+                        <h3>🌱 Plant Disease Detection</h3>
+                        <p>Identify diseases, pests, and nutrient deficiencies in crops</p>
+                    </div>
+                    <div class="prompt-card" data-type="soil_analysis">
+                        <h3>🌍 Soil Health Analysis</h3>
+                        <p>Assess soil quality, moisture, and nutrient levels</p>
+                    </div>
+                    <div class="prompt-card" data-type="livestock_health">
+                        <h3>🐄 Livestock Health Check</h3>
+                        <p>Monitor animal health and detect early signs of illness</p>
+                    </div>
+                    <div class="prompt-card" data-type="poultry_diagnosis">
+                        <h3>🐔 Poultry Disease Diagnosis</h3>
+                        <p>Comprehensive poultry health and disease assessment</p>
+                    </div>
+                    <div class="prompt-card" data-type="equipment_check">
+                        <h3>🚜 Equipment Inspection</h3>
+                        <p>Evaluate machinery condition and maintenance needs</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📸</div>
+                    <h3>Drop your image here or click to upload</h3>
+                    <p>Supports JPG, PNG, WebP (Max 10MB)</p>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                </div>
+                
+                <div class="image-preview" id="imagePreview">
+                    <img id="previewImg" src="" alt="Preview">
+                </div>
+                
+                <div class="custom-prompt">
+                    <textarea id="customPrompt" placeholder="Custom analysis prompt (optional - leave blank to use template)"></textarea>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" id="analyzeBtn" disabled>
+                        <span>🔍</span> Analyze Image
+                    </button>
+                </div>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your image with AI...</p>
+            </div>
+            
+            <div class="error" id="error"></div>
+            
+            <div class="results" id="results">
+                <div class="results-header">
+                    <div>
+                        <h2>📊 Analysis Results</h2>
+                        <div class="results-meta" id="resultsMeta"></div>
+                    </div>
+                </div>
+                <div class="results-body">
+                    <div class="analysis-content" id="analysisContent"></div>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="downloadReport()">
+                            📥 Download Report
+                        </button>
+                        <button class="btn" onclick="resetAnalysis()">
+                            🔄 New Analysis
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
-        document.getElementById('image').addEventListener('change', function(e) {
-            const preview = document.getElementById('preview');
-            preview.src = URL.createObjectURL(e.target.files[0]);
-            preview.style.display = 'block';
-        });
-
-        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('image', document.getElementById('image').files[0]);
-            formData.append('prompt', document.getElementById('prompt').value);
-
-            document.getElementById('result').innerHTML = 'Analyzing...';
-            document.getElementById('result').style.display = 'block';
-
-            const response = await fetch('/analyze', {
-                method: 'POST',
-                body: formData
+        let selectedPromptType = null;
+        let selectedFile = null;
+        let prompts = {};
+        
+        // Load prompts
+        fetch('/get-prompts')
+            .then(r => r.json())
+            .then(data => prompts = data);
+        
+        // Prompt card selection
+        document.querySelectorAll('.prompt-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.prompt-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                selectedPromptType = this.dataset.type;
             });
-            const data = await response.json();
-            document.getElementById('result').innerHTML = data.analysis || data.error;
         });
+        
+        // Upload area
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        
+        uploadArea.addEventListener('click', () => imageInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                imageInput.files = e.dataTransfer.files;
+                handleFileSelect();
+            }
+        });
+        
+        imageInput.addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect() {
+            const file = imageInput.files[0];
+            if (file && file.type.startsWith('image/')) {
+                selectedFile = file;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                analyzeBtn.disabled = false;
+            }
+        }
+        
+        analyzeBtn.addEventListener('click', analyzeImage);
+        
+        async function analyzeImage() {
+            if (!selectedFile) return;
+            
+            const customPrompt = document.getElementById('customPrompt').value.trim();
+            const prompt = customPrompt || (selectedPromptType ? prompts[selectedPromptType] : prompts.plant_disease);
+            
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('prompt', prompt);
+            formData.append('category', selectedPromptType || 'general');
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            analyzeBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayResults(data);
+            } catch (error) {
+                document.getElementById('error').textContent = 'Error: ' + error.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                analyzeBtn.disabled = false;
+            }
+        }
+        
+        function displayResults(data) {
+            const content = document.getElementById('analysisContent');
+            content.innerHTML = formatMarkdown(data.analysis);
+            
+            const meta = document.getElementById('resultsMeta');
+            const timestamp = new Date(data.timestamp).toLocaleString();
+            meta.innerHTML = `
+                <div>📁 ${data.image_name}</div>
+                <div>🏷️ Category: ${data.category}</div>
+                <div>🕒 ${timestamp}</div>
+            `;
+            
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function formatMarkdown(text) {
+            text = text.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            text = text.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            text = text.replace(/^- (.+)$/gm, '<li>$1</li>');
+            text = text.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+            text = text.replace(/\n\n/g, '<p></p>');
+            return text;
+        }
+        
+        function downloadReport() {
+            const content = document.getElementById('analysisContent').innerText;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `agrivision-report-${Date.now()}.txt`;
+            a.click();
+        }
+        
+        function resetAnalysis() {
+            selectedFile = null;
+            selectedPromptType = null;
+            imageInput.value = '';
+            document.getElementById('customPrompt').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.querySelectorAll('.prompt-card').forEach(c => c.classList.remove('active'));
+            analyzeBtn.disabled = true;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     </script>
 </body>
 </html>
